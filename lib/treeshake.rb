@@ -79,7 +79,12 @@ class Treeshaker
   end
 
   def self.list_of_all_main_instance_methods
-    [] #TODO - no idea how to grab these references
+    object_methods = Object.private_instance_methods.map do |method_name|
+      method_reference = Object.method(method_name)
+      method_defined_by_developer?(method_reference) ? method_reference : nil
+    end
+
+    object_methods.compact!
   end
 
   def self.list_of_all_main_class_methods
@@ -111,6 +116,9 @@ class Treeshaker
 
     # Also, if a method has a source_location file of <internal:prelude>, we do the same
     return false if source_data.any? && source_data[0] == '<internal:prelude>'
+
+    # Exclude core language keywords defined in core_ext (require, gem, etc)
+    return false if source_data[0].include?('/rubygems/core_ext/')
 
     # TODO: handle gem methods which have source_locations in the gem dir
     # TODO: methods defined with class_eval and define_method don't have source locations
